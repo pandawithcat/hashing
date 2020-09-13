@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use std::cmp::min;
 use std::collections::HashMap;
 use std::fs;
 type Pair = (String, usize);
@@ -7,8 +8,9 @@ type HashTable = HashMap<u8, PairList>;
 
 fn main() {
     println!("Starting Hw3");
-    //run_problem1();
+    run_problem1();
     run_problem2();
+    run_problem2_c_d();
 }
 
 fn run_problem1() {
@@ -105,7 +107,6 @@ fn count(word: String, hash_table: HashTable) -> usize {
     hasher.update(word.clone());
     let result = hasher.finalize();
     let index = result[0];
-    println!("index of {}, is {}", word, index);
     for key in hash_table.keys() {
         if *key == index {
             let pairs = hash_table.get(&key).unwrap().clone();
@@ -122,7 +123,7 @@ fn count(word: String, hash_table: HashTable) -> usize {
 fn run_problem2() {
     println!("----- Running problem2--------");
 
-    let mut cms_hash_table: [[u8; 256]; 5] = [[0; 256]; 5];
+    let mut cms_hash_table: [[u32; 256]; 5] = [[0; 256]; 5];
 
     println!(
         "row, col: {}, {}",
@@ -142,8 +143,10 @@ fn run_problem2() {
         let mut hasher = Sha256::new();
         hasher.update(word);
         let result = hasher.finalize();
+        //println!("word: {}, hash: {:?}", word, result);
         cms_hash_table[0][result[0] as usize] += 1;
         cms_hash_table[1][result[1] as usize] += 1;
+        //println!("current hash: {:?}", cms_hash_table[2][result[2] as usize]);
         cms_hash_table[2][result[2] as usize] += 1;
         cms_hash_table[3][result[3] as usize] += 1;
         cms_hash_table[4][result[4] as usize] += 1;
@@ -151,11 +154,118 @@ fn run_problem2() {
 
     println!("----- Running problem2.a--------");
 
+    println!(
+        "this is the test value for paris: {}",
+        test_cms(String::from("paris"), cms_hash_table)
+    );
+
+    println!(
+        "this is the test value for her: {}",
+        test_cms(String::from("her"), cms_hash_table)
+    );
+
+    println!(
+        "this is the test value for well: {}",
+        test_cms(String::from("well"), cms_hash_table)
+    );
+
     println!("----- Running problem2.b--------");
 
+    println!(
+        "this is the value for the: {}",
+        test_cms(String::from("the"), cms_hash_table)
+    );
+
+    println!(
+        "this is the value for are: {}",
+        test_cms(String::from("are"), cms_hash_table)
+    );
+
+    println!(
+        "this is the value for sydney: {}",
+        test_cms(String::from("sydney"), cms_hash_table)
+    );
+
+    println!(
+        "this is the value for london: {}",
+        test_cms(String::from("london"), cms_hash_table)
+    );
+}
+
+fn run_problem2_c_d() {
     println!("----- Running problem2.c and problem2.d--------");
+
+    let mut cms_hash_table: [[u32; 256]; 5] = [[0; 256]; 5];
+
+    println!(
+        "row, col: {}, {}",
+        cms_hash_table.len(),
+        cms_hash_table[0].len()
+    );
+
+    let filename: String = String::from("stream.txt");
+    println!("Filename: {}", filename);
+
+    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    //println!("{}", contents);
+    let words: Vec<&str> = contents.split(' ').collect();
+    println!("{}", words.len());
+
+    for word in words {
+        let mut hasher = Sha256::new();
+        hasher.update(word);
+        let result = hasher.finalize();
+        //find the minimum
+        let mut min_value = cms_hash_table[0][result[0] as usize];
+        for i in 0..5 {
+            min_value = min(min_value, cms_hash_table[i][result[i] as usize]);
+        }
+
+        for i in 0..5 {
+            if min_value == cms_hash_table[i][result[i] as usize] {
+                cms_hash_table[i][result[i] as usize] += 1;
+            }
+        }
+    }
+
+    println!(
+        "this is the value for the: {}",
+        test_cms(String::from("the"), cms_hash_table)
+    );
+
+    println!(
+        "this is the value for are: {}",
+        test_cms(String::from("are"), cms_hash_table)
+    );
+
+    println!(
+        "this is the value for sydney: {}",
+        test_cms(String::from("sydney"), cms_hash_table)
+    );
+
+    println!(
+        "this is the value for london: {}",
+        test_cms(String::from("london"), cms_hash_table)
+    );
 
     println!("----- Running problem2.f--------");
 
+    println!(
+        "this is the total memory(bytes) being used: {:?}",
+        5 * 256 * 4
+    );
+
     println!("----- Problem2 has ended --------");
+}
+fn test_cms(word: String, cms_hash_table: [[u32; 256]; 5]) -> u32 {
+    let mut hasher = Sha256::new();
+    hasher.update(word);
+    let result = hasher.finalize();
+    let first = min(
+        cms_hash_table[0][result[0] as usize],
+        cms_hash_table[1][result[1] as usize],
+    );
+    let second = min(first, cms_hash_table[2][result[2] as usize]);
+    let third = min(second, cms_hash_table[3][result[3] as usize]);
+    return min(third, cms_hash_table[4][result[4] as usize]);
 }
